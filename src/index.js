@@ -1,4 +1,2 @@
-import Experiment from './Experiment';
-import Variant from './Variant';
-
-export { Experiment, Variant };
+export { default as Experiment } from "./Experiment";
+export { default as Variant } from "./Variant";

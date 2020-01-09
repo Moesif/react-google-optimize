@@ -1,97 +1,101 @@
-import React from 'react';
-import { GoogleOptimizeContext } from './GoogleOptimizeContext';
+import React from "react";
+import PropTypes from "prop-types";
+import OptimizeContext from "./OptimizeContext";
 
-const gtag = function gtag() {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(arguments);
-};
-
-export default class Experiment extends React.Component {
+class Experiment extends React.Component {
   static defaultProps = {
-    name: null,
-    loadingComponent: null
+    loader: null,
+    timeout: 1000
+  };
+
+  static propTypes = {
+    id: PropTypes.string.isRequired,
+    loader: PropTypes.node,
+    timeout: PropTypes.number,
+    children: PropTypes.node
   };
 
   state = {
-    variant: typeof window === 'undefined' ? 'default' : null
+    variant: null
+  };
+
+  updateVariantTimeout = null;
+
+  updateVariant = value => {
+    clearTimeout(this.updateVariantTimeout);
+    // if experiment not active, render original
+    const newVariant = value === undefined || value === null ? "0" : value;
+    if (newVariant !== this.state.variant) {
+      this.setState({
+        variant: newVariant
+      });
+    }
+  };
+
+  updateVariantFromGlobalState = () => {
+    const value =
+      typeof window !== "undefined" && window.google_optimize
+        ? window.google_optimize.get(this.props.id)
+        : null;
+    this.updateVariant(value);
+  };
+
+  setupOptimizeCallback = () => {
+    this.updateVariantTimeout = setTimeout(
+      this.updateVariantFromGlobalState,
+      this.props.timeout
+    );
+    const oldHideEnd = window.dataLayer.hide.end;
+    window.dataLayer.hide.end = () => {
+      this.updateVariantFromGlobalState();
+      oldHideEnd && oldHideEnd();
+    };
+
+    window.gtag &&
+      window.gtag("event", "optimize.callback", {
+        name: this.props.id,
+        callback: this.updateVariant
+      });
   };
 
   componentDidMount() {
-    try {
-      if (!this.props.name) {
-        throw new Error('You must specify the experiment name.');
+    if (!this.props.id) {
+      throw new Error("Please specify the experiment id");
+    }
+
+    // Delayed init
+    if (typeof window !== "undefined" && !window.google_optimize) {
+      if (!window.dataLayer) {
+        window.dataLayer = [];
+      }
+      if (!window.dataLayer.hide) {
+        window.dataLayer.hide = { start: Date.now() };
       }
 
-      gtag('event', 'optimize.callback', {
-        name: this.props.name,
-        callback: this.setVariant
-      });
-    } catch (error) {
-      console.error(error.message);
-      this.setState({ variant: 'default' });
+      this.setupOptimizeCallback();
+    } else {
+      // Google Optimize already loaded, or we're doing server-side rendering
+      this.updateVariantFromGlobalState();
     }
   }
 
   componentWillUnmount() {
-    gtag('event', 'optimize.callback', {
-      name: this.props.name,
-      callback: this.setVariant,
-      remove: true
-    });
-  }
-
-  setVariant = value => {
-    console.log(
-      `Experiment with ID '${this.props.name}' is on variant '${value}'`
-    );
-
-    this.setState({
-      variant: value === undefined || value === null ? 'default' : value
-    });
-  };
-
-  matchVariants(value) {
-    if (value === 'default') {
-      return React.Children.map(
-        this.props.children,
-        child => child.props.default
-      ).filter(x => x).length;
-    }
-
-    return React.Children.map(
-      this.props.children,
-      child => child.props.id
-    ).filter(id => id === value).length;
+    typeof window !== "undefined" &&
+      window.gtag &&
+      window.gtag("event", "optimize.callback", {
+        name: this.props.id,
+        callback: this.updateVariant,
+        remove: true
+      });
   }
 
   render() {
-    let { variant } = this.state;
-    if (variant === null && !this.props.loadingComponent) {
-      variant = 'default';
-    }
-
-    const matchingVariants = this.matchVariants(variant);
-
-    if (matchingVariants === 0) {
-      throw new Error(
-        `Variant '${variant}' has not been registered for experiment '${
-          this.props.name
-        }'`
-      );
-    }
-
-    if (matchingVariants > 1) {
-      throw new Error(
-        `Experiment '${
-          this.props.name
-        }' cannot support more than 1 variant registed with id '${variant}' (${matchingVariants} found)`
-      );
-    }
-
     return (
-      <GoogleOptimizeContext.Provider value={variant}>
-        {variant === null ? this.props.loadingComponent : this.props.children}
-      </GoogleOptimizeContext.Provider>
+      <OptimizeContext.Provider value={this.state.variant}>
+        {this.state.variant === null ? this.props.loader : this.props.children}
+      </OptimizeContext.Provider>
     );
   }
 }
+
+export default Experiment;

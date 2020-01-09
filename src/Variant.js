@@ -1,23 +1,20 @@
-import React from 'react';
+import React from "react";
+import PropTypes from "prop-types";
+import OptimizeContext from "./OptimizeContext";
 
-import { GoogleOptimizeContext } from './GoogleOptimizeContext';
-
-export default class Variant extends React.Component {
-  static contextType = GoogleOptimizeContext;
-
-  componentDidMount() {
-    if (!this.props.default && !this.props.id) {
-      throw new Error(
-        'You must specify this variant as default or set a variant id.'
-      );
-    }
-  }
+class Variant extends React.Component {
+  static propTypes = {
+    id: PropTypes.string.isRequired,
+    children: PropTypes.node
+  };
 
   render() {
-    if (this.context === 'default' && this.props.default) {
-      return this.props.children;
-    }
-
-    return this.context === this.props.id ? this.props.children : null;
+    return (
+      <OptimizeContext.Consumer>
+        {value => (value === this.props.id ? this.props.children : null)}
+      </OptimizeContext.Consumer>
+    );
   }
 }
+
+export default Variant;

@@ -1,21 +1,17 @@
 {
-  "name": "react-google-optimize",
-  "version": "0.4.0",
+  "name": "react-google-optimize-experiment",
+  "version": "0.4.2",
   "description": "React helpers for Google Optimize A/B testing.",
   "main": "build/react-google-optimize.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gustavobini/react-google-optimize.git"
-  },
-  "author": {
-    "name": "Gustavo Bini",
-    "email": "gustavobini@gmail.com"
+    "url": "git+https://github.com/moesif/react-google-optimize.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gustavobini/react-google-optimize/issues"
+    "url": "https://github.com/moesif/react-google-optimize/issues"
   },
-  "homepage": "https://github.com/gustavobini/react-google-optimize#readme",
+  "homepage": "https://github.com/moesif/react-google-optimize#readme",
   "engines": {
     "node": ">=8.9.4"
   },

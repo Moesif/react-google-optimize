@@ -20,7 +20,7 @@ module.exports = {
   resolve: {
     extensions: ['*', '.js']
   },
-  watch: true,
+  watch: false,
   watchOptions: {
     aggregateTimeout: 1000,
     ignored: /(node_modules|example|build)/
